@@ -64,6 +64,39 @@ def build_steps(custom_text: str | None) -> list[dict]:
     ]
 
 
+# Stage 2.2 z integration. Guarded so the base pipeline still runs if the
+# semantic_spectrum deps (or torch, pulled in by its package __init__) are absent.
+try:
+    from semantic_spectrum.estimate_z import estimate_z, _load_joints
+except Exception:          # pragma: no cover - optional dependency
+    estimate_z = None
+    _load_joints = None
+
+
+def apply_estimated_base(steps: list[dict], npz_path) -> list[dict]:
+    """
+    Replace the fixed [walk:0.91] base term with one estimated from the recording
+    (Stage 2.2). The style (dance) axis still sweeps; only the base verb and its
+    weight are read off the performer's motion.
+    """
+    if estimate_z is None:
+        print('  --auto-z requested but semantic_spectrum.estimate_z is unavailable; keeping fixed base.')
+        return steps
+    try:
+        est = estimate_z(_load_joints(npz_path))
+    except Exception as e:                                    # keep the pipeline running
+        print(f'  --auto-z: estimation failed ({e}); keeping fixed base.')
+        return steps
+    base, bw = est.base, round(1.0 - est.z, 2)
+    print(f'  Estimated base: {base}:{bw:.2f}  (style axis {est.style}, z={est.z:.2f})')
+    out = []
+    for s in steps:
+        tail = s['prompt'].split('] ', 1)[-1]
+        out.append({**s, 'base_verb': base, 'base_weight': bw,
+                    'prompt': f"[dance:{s['dance']:.2f}][{base}:{bw:.2f}] {tail}"})
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -331,6 +364,9 @@ def main():
                         help='Skip edit_t2m.py runs (use existing editing/ outputs).')
     parser.add_argument('--visualize', action='store_true',
                         help='Save MediaPipe skeleton overlay video for sanity checks.')
+    parser.add_argument('--auto-z', dest='auto_z', action='store_true',
+                        help='Stage 2.2: estimate the base verb and weight from the recording '
+                             'instead of the fixed [walk:0.91]. The dance axis still sweeps.')
     parser.add_argument('--text', default=None,
                         help='Custom text tail appended after the spectrum tags in every prompt. '
                              'E.g. --text "A person performs a hip-hop routine." '
@@ -348,6 +384,10 @@ def main():
         print(f'  Skipping (using existing {npz_path})')
     else:
         stage_mediapipe(video_path, npz_path, args.visualize)
+
+    if args.auto_z:
+        print('  Stage 2.2: estimating base verb from the recording (--auto-z)')
+        steps = apply_estimated_base(steps, npz_path)
 
     print(f'\n=== Stage 2: MoMask inference (10 intensity steps) ===')
     if args.text:
