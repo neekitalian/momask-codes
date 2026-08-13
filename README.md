@@ -208,6 +208,93 @@ python train_res_transformer.py \
 
 ---
 
+## Phase 2 — Zone-Aware Blending Pipeline
+
+Phase 2 adds a **kinematic feature blending** layer on top of MoMask inference. Instead of relying on text conditioning alone, the system extracts per-zone movement features from the source video, runs MoMask to get a target motion, then autoregressively reconstructs an output that blends the two at the feature level.
+
+### Features
+
+Eight independent kinematic dimensions are extracted per body zone:
+
+| Index | Name | What it controls |
+|-------|------|-----------------|
+| 0 | `vel_mean` | Average per-joint speed |
+| 1 | `vel_std` | Spread of joint speeds around the mean |
+| 2 | `acc_mean` | Smoothness of motion (low = fluid, high = snappy) |
+| 3 | `rom` | Range of motion (centroid drift from origin) |
+| 4 | `dom_freq` | Dominant oscillation frequency |
+| 5 | `freq_mag` | Amplitude of oscillation (always paired with dom_freq) |
+| 6 | `pairwise_dist` | Inter-joint spread within the zone |
+| 7 | `zone_speed` | Zone centroid speed (zone as rigid unit) |
+
+### Run the blend pipeline
+
+Create a jobs file (`jobs.json`):
+
+```json
+[
+  {
+    "ext": "walk_001/walk_to_dance",
+    "text_prompt": "[walk:0.91] A person walks forward.",
+    "source_motion": "outputs/walk_001/mediapipe_out.npz"
+  }
+]
+```
+
+Then run:
+
+```bash
+python scripts/run_zone_blend.py \
+    --jobs_file jobs.json \
+    --alpha 0.5 \
+    --gpu_id 0 \
+    --out_dir blend_outputs
+```
+
+To also produce one output per feature (ablation):
+
+```bash
+python scripts/run_zone_blend.py --jobs_file jobs.json --ablate --gpu_id 0
+```
+
+Output is saved to `blend_outputs/<ext>/animations/`.
+
+### Ablation dashboard
+
+An interactive web dashboard for exploring per-feature contributions and post-processing. Requires Flask (`pip install flask`).
+
+```bash
+python scripts/ablation_dashboard.py \
+    --jobs_file jobs.json \
+    --job_idx 0 \
+    --out_dir dashboard_outputs \
+    --gpu_id 0 \
+    --port 5050
+```
+
+Opens automatically at `http://localhost:5050`. Layout:
+
+- **Row 1** — Source | Final Combined | Original Blended (large reference videos)
+- **Row 2** — Each post-processing step applied individually (smooth → velocity clamp → acceleration clamp → bone lengths → floor constraint)
+- **Row 3** — Per-feature ablation videos with `+`/`−` alpha sliders
+- **Footer** — RUN (reruns reconstruction with current alphas) | SAVE (writes `alphas.json`)
+
+Clicking RUN applies the current alpha values per feature, recomputes the blended output, applies the full post-processing pipeline, and refreshes all videos.
+
+### Post-processing steps
+
+Applied after blending to correct physically implausible motion:
+
+| Step | What it does |
+|------|-------------|
+| Smooth | Gaussian temporal smoothing to remove jitter (σ=1.5 frames) |
+| Velocity clamp | Caps per-joint speed at 5 m/s |
+| Acceleration clamp | Caps per-joint acceleration at 30 m/s² |
+| Bone lengths | Re-projects joints along the kinematic chain to preserve limb lengths |
+| Floor constraint | Lifts the skeleton if foot joints sink below the ground plane |
+
+---
+
 ## Project Structure
 
 ```
@@ -215,6 +302,8 @@ scripts/
     video_to_spectrum.py      # Main pipeline: video → motion → videos
     run_and_compare.py        # Blind A/B comparison builder
     run_spectrum_pipeline.py  # Spectrum augmentation CLI
+    run_zone_blend.py         # Phase 2 blend pipeline CLI
+    ablation_dashboard.py     # Interactive feature explorer (Flask)
     visualize_spectrum.py     # Score distribution plots
 
 video_bridge/
@@ -225,9 +314,19 @@ semantic_spectrum/
     synthesizer.py            # Generates spectrum caption strings
     augment.py                # Writes _spec_*.txt files alongside originals
     dimensions.py             # Raw kinematic feature extractors
+    pipeline.py               # ZoneBlendPipeline orchestrator
+    blend.py                  # Feature-space blending + autoregressive reconstruction
+    zone_features.py          # Per-zone kinematic feature extraction (8 dims)
+    zones.py                  # Body zone definitions
+    postprocess.py            # Modular biomechanical post-processing steps
+
+tests/
+    test_spectrum_pipeline.py # Spectrum augmentation unit tests
+    test_ablation.py          # Ablation + feature blending tests (24 tests)
 
 input_videos/                 # Drop your MP4 here
 outputs/                      # Generated videos appear here
+blend_outputs/                # Phase 2 blend pipeline outputs
 editing/                      # MoMask edit_t2m.py output folders
 ```
 

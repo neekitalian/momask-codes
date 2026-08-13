@@ -154,7 +154,7 @@ if __name__ == '__main__':
                 rounding_mode='floor'
             )
         edit_mask[:, _start: _end] = 1
-        print_captions = f'{print_captions} [{_start*4/20.}s - {_end*4/20.}s]'
+        print_captions = f' {_start*4/20.}s - {_end*4/20.}s]'
     edit_mask = edit_mask.bool()
     for r in range(opt.repeat_times):
         print("-->Repeat %d"%r)
@@ -208,8 +208,8 @@ if __name__ == '__main__':
             ik_save_path = pjoin(animation_path, "sample%d_repeat%d_len%d_ik.mp4"%(k, r, m_length[k]))
             source_save_path = pjoin(animation_path, "sample%d_source_len%d.mp4"%(k, m_length[k]))
 
-            plot_3d_motion(ik_save_path, kinematic_chain, ik_joint, title=print_captions, fps=20)
-            plot_3d_motion(save_path, kinematic_chain, joint, title=print_captions, fps=20)
+            plot_3d_motion(ik_save_path, kinematic_chain, ik_joint, fps=20)
+            plot_3d_motion(save_path, kinematic_chain, joint, fps=20)
             plot_3d_motion(source_save_path, kinematic_chain, source_joint, title='None', fps=20)
             np.save(pjoin(joint_path, "sample%d_repeat%d_len%d.npy"%(k, r, m_length[k])), joint)
             np.save(pjoin(joint_path, "sample%d_repeat%d_len%d_ik.npy"%(k, r, m_length[k])), ik_joint)

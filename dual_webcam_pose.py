@@ -10,7 +10,7 @@ import mediapipe as mp
 # ----------------------------------------------------------------------
 # CONFIGURATION
 # ----------------------------------------------------------------------
-CAMERA_INDICES = [0, 3]      # The two webcams. Change if needed (see notes below).
+CAMERA_INDICES = [1, 2]      # The two webcams. Change if needed (see notes below).
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
 FPS = 30                     # Target FPS for the output files.

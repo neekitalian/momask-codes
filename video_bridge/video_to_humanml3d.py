@@ -257,26 +257,42 @@ def interpolate_missing_pose_frames(landmarks: np.ndarray) -> np.ndarray:
     if missing_indices.size == 0:
         return landmarks
 
-    runs = consecutive_runs(missing_indices)
-    bad_runs = [run for run in runs if len(run) > 1]
-    if bad_runs:
-        first = bad_runs[0]
+    if not valid.any():
         raise RuntimeError(
-            "MediaPipe failed to detect a pose for multiple consecutive frames "
-            f"({first[0]}-{first[-1]}). Use a clearer full-body video or trim the clip."
+            "MediaPipe detected no poses in the entire video. "
+            "Ensure the full body is visible and well lit."
         )
 
+    first_valid = int(np.argmax(valid))
+    last_valid  = int(len(valid) - 1 - np.argmax(valid[::-1]))
+
     fixed = landmarks.copy()
-    for idx in missing_indices:
-        prev_idx = idx - 1
-        next_idx = idx + 1
-        if prev_idx < 0 or next_idx >= len(landmarks) or not valid[prev_idx] or not valid[next_idx]:
-            raise RuntimeError(
-                "MediaPipe missed a pose at the start or end of the clip, so it "
-                f"cannot be interpolated safely (frame {idx}). Trim the video."
-            )
-        fixed[idx] = 0.5 * (fixed[prev_idx] + fixed[next_idx])
-        print(f"Warning: interpolated a missing MediaPipe pose at frame {idx}.")
+    runs  = consecutive_runs(missing_indices.tolist())
+
+    for run in runs:
+        lo, hi = run[0], run[-1]
+
+        # Leading dead frames — pad forward with first valid frame
+        if lo == 0 or not valid[:lo].any():
+            print(f"Warning: no pose in frames {lo}-{hi} (start of clip) — padding with frame {first_valid}.")
+            fixed[lo:hi + 1] = fixed[first_valid]
+            continue
+
+        # Trailing dead frames — pad backward with last valid frame
+        if hi == len(landmarks) - 1 or not valid[hi + 1:].any():
+            print(f"Warning: no pose in frames {lo}-{hi} (end of clip) — padding with frame {last_valid}.")
+            fixed[lo:hi + 1] = fixed[last_valid]
+            continue
+
+        # Mid-clip gap: linearly interpolate between nearest valid frames
+        prev_lm = fixed[lo - 1]
+        next_lm = fixed[hi + 1]
+        if len(run) > 5:
+            print(f"Warning: no pose in frames {lo}-{hi} ({len(run)} frames) — interpolating.")
+        for i, idx in enumerate(run):
+            t = (i + 1) / (len(run) + 1)
+            fixed[idx] = (1 - t) * prev_lm + t * next_lm
+
     return fixed
 
 

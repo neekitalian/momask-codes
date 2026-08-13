@@ -46,7 +46,10 @@ momask_input.npz
 .pytest_cache/
 .coverage
 
-# ── To-be-removed folder (delete locally before final push) ──────────────────
+# ── To-be-removed folder ──────────────────
 remove/
 
 .claude/
+
+# ── To-be-removed folder ──────────────────
+*.mp4
