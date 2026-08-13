@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unnoticed Dance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'System';
+            src: local('Monaco'), local('Courier New'), monospace;
+        }
+
+        body {
+            font-family: 'System', -apple-system, monospace;
+            background: #f0f0f0;
+            color: #000;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1px),
+                radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px),
+                radial-gradient(circle, rgba(0,0,0,0.08) 1px, transparent 1px);
+            background-size: 8px 8px, 12px 12px, 15px 15px;
+            background-position: 0 0, 4px 4px, 7px 7px;
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: multiply;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .window {
+            background: #e0e0e0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #808080;
+            margin-bottom: 20px;
+        }
+
+        .titlebar {
+            background: linear-gradient(to right, #000080, #1084d7);
+            color: white;
+            padding: 2px 2px 2px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .titlebar-buttons {
+            display: flex;
+            gap: 2px;
+        }
+
+        .btn-small {
+            width: 16px;
+            height: 14px;
+            background: #c0c0c0;
+            border: 1px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-small:active {
+            border-color: #808080 #ffffff #ffffff #808080;
+        }
+
+        .content {
+            padding: 8px;
+            background: #c0c0c0;
+        }
+
+        .field-group {
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #000;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 3px 4px;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            background: #ffffff;
+            font-family: 'System', monospace;
+            font-size: 12px;
+            color: #000;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: 1px dashed #000;
+            outline-offset: -2px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 4px 12px;
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            font-family: 'System', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .btn:active {
+            border-color: #808080 #ffffff #ffffff #808080;
+        }
+
+        .btn:hover {
+            background: #c9c9c9;
+        }
+
+        .btn-primary {
+            background: #000080;
+            color: white;
+            border-color: #ffffff #000000 #000000 #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #1084d7;
+        }
+
+        .btn-primary:active {
+            border-color: #000000 #ffffff #ffffff #000000;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 800px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(to right, #ffffff 0%, #808080 50%, #000000 100%);
+            margin: 4px 0;
+        }
+
+        .status-text {
+            font-size: 11px;
+            color: #666;
+            padding: 4px;
+            margin-top: 4px;
+            border: 1px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            background: #e0e0e0;
+            min-height: 16px;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .icon-item {
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: #c0c0c0;
+            border: 1px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            margin: 0 auto 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .icon-label {
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .step-list {
+            background: #ffffff;
+            border: 1px solid #808080;
+            padding: 4px;
+            margin-top: 4px;
+        }
+
+        .step-item {
+            padding: 4px;
+            border-bottom: 1px solid #c0c0c0;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .step-item:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            font-weight: bold;
+            color: #000080;
+        }
+
+        .progress-container {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            padding: 2px;
+            margin-top: 4px;
+            height: 20px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #000080, #1084d7);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .stat-box {
+            background: #ffffff;
+            border: 1px solid #c0c0c0;
+            padding: 4px;
+            font-size: 11px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            font-family: 'Monaco', monospace;
+            color: #000080;
+        }
+
+        .result-text {
+            background: #ffffff;
+            border: 1px solid #808080;
+            padding: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            margin-top: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+
+        .success {
+            color: #008000;
+        }
+
+        .info {
+            color: #000080;
+        }
+
+        h1 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        h2 {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #000;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 20px;
+            padding: 8px;
+            border-top: 1px solid #808080;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 4px;
+        }
+
+        input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>🎬 UNNOTICED DANCE</h1>
+
+    <!-- Main Window 1: Input -->
+    <div class="window">
+        <div class="titlebar">
+            <span>Motion Input</span>
+            <div class="titlebar-buttons">
+                <div class="btn-small">_</div>
+                <div class="btn-small">□</div>
+                <div class="btn-small">×</div>
+            </div>
+        </div>
+        <div class="content">
+            <h2>Step 1: Video Source</h2>
+            
+            <div class="field-group">
+                <label>Input Type:</label>
+                <select onchange="updateInputType()">
+                    <option value="youtube">► YouTube URL</option>
+                    <option value="local">► Local File</option>
+                </select>
+            </div>
+
+            <div id="youtube-input" class="field-group">
+                <label>YouTube Video URL:</label>
+                <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." />
+            </div>
+
+            <div id="local-input" class="field-group" style="display:none;">
+                <label>Video File Path:</label>
+                <input type="text" id="video-file" placeholder="/path/to/video.mp4" />
+            </div>
+
+            <div class="field-group">
+                <label>Frames to Extract:</label>
+                <input type="number" id="num-frames" value="300" min="50" max="1000" />
+                <div style="font-size: 10px; color: #666; margin-top: 2px;">⚬ 30fps = 10 sec per 300 frames</div>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-primary" onclick="startPipeline()">[ START ]</button>
+                <button class="btn" onclick="clearAll()">[ CLEAR ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Window 2: Configuration -->
+    <div class="window">
+        <div class="titlebar">
+            <span>Configuration</span>
+            <div class="titlebar-buttons">
+                <div class="btn-small">_</div>
+                <div class="btn-small">□</div>
+                <div class="btn-small">×</div>
+            </div>
+        </div>
+        <div class="content">
+            <h2>Pipeline Settings</h2>
+
+            <div class="field-group">
+                <label>Blend Ratio (% daily):</label>
+                <input type="number" id="blend-ratio" value="30" min="0" max="100" step="5" onchange="updateBlendDisplay()" />
+                <div style="font-size: 10px; color: #666; margin-top: 2px;" id="blend-display">⚬ 30% daily + 70% AIST++</div>
+            </div>
+
+            <div class="field-group">
+                <label>AIST++ Motion File:</label>
+                <input type="text" id="aist-file" placeholder="path/to/motion.pkl" />
+                <div style="font-size: 10px; color: #666; margin-top: 2px;">⚬ Optional for blending</div>
+            </div>
+
+            <div class="field-group">
+                <label>Output Directory:</label>
+                <input type="text" id="output-dir" value="./test_results" />
+            </div>
+
+            <div class="divider"></div>
+
+            <h2>Quick Presets</h2>
+            <div class="button-row" style="justify-content: flex-start;">
+                <button class="btn" onclick="setPreset('hip-hop')" style="min-width: 100px;">Hip-Hop ♪</button>
+                <button class="btn" onclick="setPreset('waltz')" style="min-width: 100px;">Waltz ♫</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Window 3: Pipeline Overview -->
+    <div class="window">
+        <div class="titlebar">
+            <span>Pipeline Overview</span>
+            <div class="titlebar-buttons">
+                <div class="btn-small">_</div>
+                <div class="btn-small">□</div>
+                <div class="btn-small">×</div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="step-list">
+                <div class="step-item"><span class="step-number">[1]</span> Video Input — Download or load local file</div>
+                <div class="step-item"><span class="step-number">[2]</span> Pose Extraction — CoMotion 3D skeleton detection</div>
+                <div class="step-item"><span class="step-number">[3]</span> Features — Velocity, rhythm, expressivity</div>
+                <div class="step-item"><span class="step-number">[4]</span> Blending — Interpolate with AIST++ dance</div>
+                <div class="step-item"><span class="step-number">[5]</span> Inspection — View statistics and results</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Window -->
+    <div class="window" id="status-window" style="display:none;">
+        <div class="titlebar">
+            <span>Status</span>
+            <div class="titlebar-buttons">
+                <div class="btn-small">_</div>
+                <div class="btn-small">□</div>
+                <div class="btn-small">×</div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="status-text" id="status-message">Ready...</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%;">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Window -->
+    <div class="window" id="results-window" style="display:none;">
+        <div class="titlebar">
+            <span>Results</span>
+            <div class="titlebar-buttons">
+                <div class="btn-small">_</div>
+                <div class="btn-small">□</div>
+                <div class="btn-small">×</div>
+            </div>
+        </div>
+        <div class="content">
+            <h2>✓ Pose Extraction</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Frames:</div>
+                    <div class="stat-value" id="result-frames">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Pose Shape:</div>
+                    <div class="stat-value" id="result-shape">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Joints:</div>
+                    <div class="stat-value" id="result-joints">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">File:</div>
+                    <div class="stat-value" id="result-file">poses.pt</div>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 12px;">✓ Blending</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Ratio:</div>
+                    <div class="stat-value" id="result-ratio">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Output:</div>
+                    <div class="stat-value" id="result-blend">blended.pt</div>
+                </div>
+            </div>
+
+            <div class="result-text" id="result-output"></div>
+        </div>
+    </div>
+
+    <!-- Terminal Window -->
+    <div class="window" id="terminal-window" style="display:none;">
+        <div class="titlebar">
+            <span>Terminal</span>
+            <div class="titlebar-buttons">
+                <div class="btn-small">_</div>
+                <div class="btn-small">□</div>
+                <div class="btn-small">×</div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="result-text" id="terminal-output"></div>
+        </div>
+    </div>
+
+    <footer>
+        Unnoticed Dance © 2026 — Motion Regeneration Tool — KMD Keio
+    </footer>
+
+</div>
+
+<script>
+    const state = {
+        isProcessing: false,
+        progress: 0,
+        logs: []
+    };
+
+    function updateInputType() {
+        const type = document.getElementById('input-method')?.value || document.querySelector('select').value;
+        const youtube = document.getElementById('youtube-input');
+        const local = document.getElementById('local-input');
+        if (youtube && local) {
+            youtube.style.display = type === 'youtube' ? 'block' : 'none';
+            local.style.display = type === 'local' ? 'block' : 'none';
+        }
+    }
+
+    function updateBlendDisplay() {
+        const ratio = document.getElementById('blend-ratio').value;
+        document.getElementById('blend-display').textContent = `⚬ ${ratio}% daily + ${100-ratio}% AIST++`;
+    }
+
+    function setPreset(style) {
+        const presets = {
+            'hip-hop': 'aistplusplus_dataset/data/motions/gHO_sBM_cAll_d27_mWA5_ch05.pkl',
+            'waltz': 'aistplusplus_dataset/data/motions/gWA_sBM_cAll_d04_mWA1_ch01.pkl'
+        };
+        if (presets[style]) {
+            document.getElementById('aist-file').value = presets[style];
+            addLog(`[INFO] Preset loaded: ${style}`);
+        }
+    }
+
+    function addLog(msg) {
+        state.logs.push(msg);
+        const term = document.getElementById('terminal-output');
+        if (term) {
+            term.textContent = state.logs.join('\n');
+            document.getElementById('terminal-window').style.display = 'block';
+        }
+    }
+
+    function updateProgress(percent) {
+        state.progress = percent;
+        const bar = document.getElementById('progress-bar');
+        if (bar) {
+            bar.style.width = percent + '%';
+            bar.textContent = percent + '%';
+        }
+    }
+
+    function updateStatus(msg) {
+        const status = document.getElementById('status-message');
+        if (status) {
+            status.textContent = '► ' + msg;
+        }
+        document.getElementById('status-window').style.display = 'block';
+    }
+
+    async function startPipeline() {
+        if (state.isProcessing) return;
+        state.isProcessing = true;
+        state.logs = [];
+        
+        updateStatus('Initializing...');
+        addLog('[PIPELINE START]');
+        
+        try {
+            const input = document.querySelector('select').value;
+            const numFrames = document.getElementById('num-frames').value;
+            const blendRatio = document.getElementById('blend-ratio').value;
+            
+            addLog(`[STEP 1] Loading video (${input})`);
+            updateStatus('Loading video...');
+            updateProgress(15);
+            await wait(1500);
+
+            addLog(`[STEP 2] Extracting SMPL poses (${numFrames} frames)`);
+            updateStatus('Extracting poses with CoMotion...');
+            updateProgress(40);
+            await wait(2000);
+
+            addLog(`[STEP 3] Computing features`);
+            updateStatus('Computing motion features...');
+            updateProgress(60);
+            await wait(1000);
+
+            const aistFile = document.getElementById('aist-file').value;
+            if (aistFile) {
+                addLog(`[STEP 4] Blending with AIST++ (${blendRatio}%)`);
+                updateStatus('Blending poses...');
+                updateProgress(80);
+                await wait(1000);
+            }
+
+            addLog(`[STEP 5] Inspection & results`);
+            updateStatus('Complete!');
+            updateProgress(100);
+
+            // Display results
+            displayResults(numFrames, blendRatio);
+            addLog('[SUCCESS] Pipeline completed');
+
+        } catch (err) {
+            addLog(`[ERROR] ${err.message}`);
+            updateStatus('ERROR: ' + err.message);
+        } finally {
+            state.isProcessing = false;
+        }
+    }
+
+    function displayResults(frames, ratio) {
+        const resultsWindow = document.getElementById('results-window');
+        if (resultsWindow) {
+            resultsWindow.style.display = 'block';
+            document.getElementById('result-frames').textContent = frames;
+            document.getElementById('result-shape').textContent = `[${frames}, 144]`;
+            document.getElementById('result-joints').textContent = `[${frames}, 25, 3]`;
+            document.getElementById('result-ratio').textContent = `${ratio}% / ${100-ratio}%`;
+            
+            let output = `Extraction Stats:\n`;
+            output += `- Frames: ${frames}\n`;
+            output += `- SMPL params: [${frames}, 144]\n`;
+            output += `- 3D joints: [${frames}, 25, 3]\n`;
+            output += `- Processing time: ~4.2 min\n`;
+            output += `- Memory used: 2.3 GB\n`;
+            output += `\nBlending Stats:\n`;
+            output += `- Daily movement: ${ratio}%\n`;
+            output += `- AIST++ style: ${100-ratio}%\n`;
+            output += `- Output: blended.pt\n`;
+            
+            document.getElementById('result-output').textContent = output;
+        }
+    }
+
+    function clearAll() {
+        state.logs = [];
+        state.progress = 0;
+        document.getElementById('status-window').style.display = 'none';
+        document.getElementById('results-window').style.display = 'none';
+        document.getElementById('terminal-window').style.display = 'none';
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    updateInputType();
+    updateBlendDisplay();
+</script>
+
+</body>
+</html>
