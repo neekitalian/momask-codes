@@ -1,0 +1,535 @@
+<title>Unnoticed Dance Feature Station</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --surface2:#f4f6f9; --ink:#141922; --muted:#5a6675; --faint:#8a95a4;
+  --line:#dbe1e9; --cyan:#0f8fb8; --space:#d63d74; --viewport:#0b0b12; --shadow:0 1px 2px rgba(16,22,30,.05),0 10px 30px rgba(16,22,30,.07);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0b0e13; --surface:#141922; --surface2:#0f141b; --ink:#eef2f6; --muted:#9aa5b1; --faint:#66707d;
+  --line:#232b36; --cyan:#5cd6ff; --space:#ff6f9d; --viewport:#0b0b12; --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.45);
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0e13; --surface:#141922; --surface2:#0f141b; --ink:#eef2f6; --muted:#9aa5b1; --faint:#66707d;
+  --line:#232b36; --cyan:#5cd6ff; --space:#ff6f9d; --viewport:#0b0b12; --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.45);
+}
+:root[data-theme="light"]{
+  --bg:#eef1f5; --surface:#ffffff; --surface2:#f4f6f9; --ink:#141922; --muted:#5a6675; --faint:#8a95a4;
+  --line:#dbe1e9; --cyan:#0f8fb8; --space:#d63d74; --viewport:#0b0b12; --shadow:0 1px 2px rgba(16,22,30,.05),0 10px 30px rgba(16,22,30,.07);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace}
+h1{font-size:1.35rem;letter-spacing:-.01em;margin:0;font-weight:750;text-wrap:balance}
+.sub{color:var(--muted);font-size:.82rem;margin-top:3px}
+.eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+
+header{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.badge{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--space);border:1px solid color-mix(in srgb,var(--space) 45%,transparent);border-radius:999px;padding:4px 10px;background:color-mix(in srgb,var(--space) 12%,transparent);white-space:nowrap}
+
+/* ---------- capture screen ---------- */
+.capture{min-height:calc(100vh - 74px);display:flex;align-items:center;justify-content:center;padding:26px}
+.capture.hide{display:none}
+.cap-card{width:100%;max-width:760px;display:flex;flex-direction:column;gap:18px;align-items:center;text-align:center}
+.cap-view{position:relative;width:100%;max-width:640px;aspect-ratio:4/3;background:var(--viewport);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.cap-view video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cap-view video.up{transform:none}
+.cap-view canvas{position:absolute;inset:0;width:100%;height:100%}
+.cap-hint{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;font-size:.82rem;color:#dfe6ef;background:linear-gradient(transparent,rgba(0,0,0,.55));text-align:left}
+.countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:6rem;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.6)}
+.countdown.on{display:flex}
+.dotrec{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff5d6c;margin-right:7px;vertical-align:middle;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.cap-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.seg button{border:none;background:transparent;color:var(--ink);padding:8px 12px;font-size:.82rem;cursor:pointer}
+.seg button.sel{background:var(--cyan);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button.sel{color:#04222c}}
+.file-btn{position:relative;overflow:hidden;display:inline-flex}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* ---------- station ---------- */
+.wrap{display:grid;grid-template-columns:360px 1fr;gap:0;min-height:calc(100vh - 74px)}
+.wrap.hide{display:none}
+.rail{border-right:1px solid var(--line);padding:18px 18px 30px;overflow-y:auto}
+.stage{padding:22px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
+
+.grp{margin-bottom:18px}
+.grp-h{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.grp-h .ax{font-weight:700;font-size:.82rem;letter-spacing:.02em}
+.grp-h .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan)}
+.grp.space .grp-h .dot{background:var(--space)}
+.grp.space .grp-h .ax{color:var(--space)}
+.grp-h .new{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:.6rem;letter-spacing:.14em;color:var(--space)}
+
+.feat{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.feat.off{opacity:.5}
+.feat.on.space{border-color:color-mix(in srgb,var(--space) 55%,var(--line))}
+.feat.on:not(.space){border-color:color-mix(in srgb,var(--cyan) 50%,var(--line))}
+.feat-top{display:flex;align-items:center;gap:10px}
+.feat-name{font-size:.86rem;font-weight:600}
+.feat-hint{font-size:.7rem;color:var(--faint);margin-top:1px}
+.val{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.feat.on .val{color:var(--ink)}
+.tg{position:relative;width:34px;height:19px;border-radius:999px;background:var(--line);border:none;cursor:pointer;flex:0 0 auto;transition:background .15s}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .15s}
+.feat.on .tg{background:var(--cyan)}
+.feat.on.space .tg{background:var(--space)}
+.feat.on .tg::after{transform:translateX(15px)}
+input[type=range]{width:100%;margin:9px 0 0;accent-color:var(--cyan)}
+.feat.space input[type=range]{accent-color:var(--space)}
+input[type=range]:disabled{opacity:.5}
+
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button.act{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 13px;font-size:.82rem;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+button.act:hover{border-color:var(--cyan)}
+button.act.primary{background:var(--cyan);color:#04222c;border-color:var(--cyan);font-weight:650}
+:root[data-theme="light"] button.act.primary,:root:not([data-theme="dark"]) button.act.primary{color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.act.primary{color:#04222c}}
+.hint{color:var(--muted);font-size:.78rem}
+
+.viewport{position:relative;background:var(--viewport);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.viewport canvas{display:block;width:100%;height:auto}
+.vlabel{position:absolute;top:12px;left:14px;font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 13px;box-shadow:var(--shadow);min-width:120px}
+.chip .k{font-family:ui-monospace,Menlo,monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.chip .v{font-family:ui-monospace,Menlo,monospace;font-size:1.15rem;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
+.chip.turn .v{color:var(--space)}
+.note{color:var(--muted);font-size:.8rem;max-width:70ch}
+.note b{color:var(--ink)}
+
+.banner{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:50;padding:9px 15px;border-radius:10px;font-size:.82rem;
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:none;max-width:90vw}
+.banner.on{display:block}
+.banner.err{border-color:color-mix(in srgb,#ff5d6c 55%,var(--line))}
+
+@media (max-width:820px){.wrap{grid-template-columns:1fr}.rail{border-right:none;border-bottom:1px solid var(--line);max-height:none}}
+</style>
+
+<div class="banner" id="banner"></div>
+
+<header>
+  <div>
+    <div class="eyebrow">Unnoticed Dance</div>
+    <h1>Move, then feel what makes it dance</h1>
+    <div class="sub" id="hsub">Record a short clip or upload a video. Your motion becomes the base you can reshape.</div>
+  </div>
+  <div class="badge">Space axis &middot; new</div>
+</header>
+
+<!-- ============ SCREEN 1: CAPTURE ============ -->
+<section class="capture" id="capture">
+  <div class="cap-card">
+    <div class="cap-view">
+      <video id="cam" autoplay playsinline muted></video>
+      <video id="upvideo" class="up" playsinline muted style="display:none"></video>
+      <canvas id="capcv"></canvas>
+      <div class="countdown" id="countdown"></div>
+      <div class="cap-hint" id="caphint">Starting camera&hellip;</div>
+    </div>
+    <div class="cap-controls">
+      <span class="hint">Length</span>
+      <div class="seg" id="durseg">
+        <button data-s="6" class="sel">6s</button>
+        <button data-s="10">10s</button>
+        <button data-s="15">15s</button>
+      </div>
+      <button class="act primary" id="recBtn" disabled>Record</button>
+      <button class="act file-btn" id="upBtn">Upload video<input type="file" id="videoFile" accept=".mp4,.m4v,.mov,.webm,video/mp4,video/quicktime,video/webm,video/*"></button>
+      <button class="act" id="sampleBtn">Use sample motion</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 2: FEATURE STATION ============ -->
+<div class="wrap hide" id="station">
+  <aside class="rail" id="rail"></aside>
+  <main class="stage">
+    <div class="bar">
+      <button class="act primary" id="play">Pause</button>
+      <button class="act" id="reset">Reset</button>
+      <button class="act" id="recapture">New capture</button>
+      <span class="hint" id="status">original motion</span>
+    </div>
+    <div class="viewport"><div class="vlabel">your motion &middot; front view</div><canvas id="cv" width="640" height="460"></canvas></div>
+    <div class="chips">
+      <div class="chip"><div class="k">mean joint speed</div><div class="v mono" id="m-speed">0.00</div></div>
+      <div class="chip turn"><div class="k">turn rate (space)</div><div class="v mono" id="m-turn">0.00</div></div>
+      <div class="chip"><div class="k">active features</div><div class="v mono" id="m-active">0 / 9</div></div>
+    </div>
+    <p class="note">Every feature is applied per body zone (head, torso, arms, hands, legs, feet), the way the zone-blend pipeline reconstructs it. <b>Turn rate</b> is the new Space feature: it yaws each zone about vertical, the one dimension the earlier eight could not measure or tune. Everything runs in your browser, no model required.</p>
+  </main>
+</div>
+
+<script type="module">
+import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+/* ================= skeleton ================= */
+const FPS=20, RES_N=140;                 // reconstruction runs at a fixed length for stable feel
+const PARENTS=[-1,0,0,0,1,2,3,4,5,6,7,8,9,9,9,12,13,14,16,17,18,19];
+const BONES=[];for(let j=1;j<22;j++)BONES.push([PARENTS[j],j]);
+const ZONES={head:[12,15],torso:[0,3,6,9],arms:[13,14,16,17,18,19],hands:[20,21],legs:[1,2,4,5,7,8],feet:[10,11]};
+const BX=[0,-0.10,0.10,0,-0.10,0.10,0,-0.10,0.10,0,-0.10,0.10,0,-0.18,0.18,0,-0.35,0.35,-0.50,0.50,-0.60,0.60];
+const BY=[0.98,0.90,0.90,1.12,0.50,0.50,1.22,0.08,0.08,1.33,0.02,0.02,1.53,1.43,1.43,1.63,1.42,1.42,1.18,1.18,0.95,0.95];
+
+const MP={NOSE:0,L_SH:11,R_SH:12,L_EL:13,R_EL:14,L_WR:15,R_WR:16,L_HIP:23,R_HIP:24,L_KN:25,R_KN:26,L_AN:27,R_AN:28,L_FOOT:31,R_FOOT:32};
+const HJ={pelvis:0,left_hip:1,right_hip:2,spine1:3,left_knee:4,right_knee:5,spine2:6,left_ankle:7,right_ankle:8,spine3:9,
+  left_foot:10,right_foot:11,neck:12,left_collar:13,right_collar:14,head:15,left_shoulder:16,right_shoulder:17,
+  left_elbow:18,right_elbow:19,left_wrist:20,right_wrist:21};
+function vv(lm,i){return [lm[i].x,lm[i].y,lm[i].z];}
+function mid(a,b){return [(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];}
+function lrp(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];}
+function mp33to22(lm){
+  const j=Array.from({length:22},()=>[0,0,0]);
+  const lhip=vv(lm,MP.L_HIP),rhip=vv(lm,MP.R_HIP),lsh=vv(lm,MP.L_SH),rsh=vv(lm,MP.R_SH);
+  const pelvis=mid(lhip,rhip),neck=mid(lsh,rsh);
+  j[HJ.pelvis]=pelvis;j[HJ.left_hip]=lhip;j[HJ.right_hip]=rhip;
+  j[HJ.left_knee]=vv(lm,MP.L_KN);j[HJ.right_knee]=vv(lm,MP.R_KN);
+  j[HJ.left_ankle]=vv(lm,MP.L_AN);j[HJ.right_ankle]=vv(lm,MP.R_AN);
+  j[HJ.left_foot]=vv(lm,MP.L_FOOT);j[HJ.right_foot]=vv(lm,MP.R_FOOT);
+  j[HJ.spine1]=lrp(pelvis,neck,0.25);j[HJ.spine2]=lrp(pelvis,neck,0.5);j[HJ.spine3]=lrp(pelvis,neck,0.75);
+  j[HJ.neck]=neck;j[HJ.left_shoulder]=lsh;j[HJ.right_shoulder]=rsh;
+  j[HJ.left_elbow]=vv(lm,MP.L_EL);j[HJ.right_elbow]=vv(lm,MP.R_EL);
+  j[HJ.left_wrist]=vv(lm,MP.L_WR);j[HJ.right_wrist]=vv(lm,MP.R_WR);
+  j[HJ.left_collar]=lrp(neck,lsh,0.4);j[HJ.right_collar]=lrp(neck,rsh,0.4);
+  const nose=vv(lm,MP.NOSE);j[HJ.head]=lrp(neck,nose,1.3);
+  return j;
+}
+function toYupHip(j22){const p=j22[HJ.pelvis];return j22.map(q=>[q[0]-p[0],-(q[1]-p[1]),-(q[2]-p[2])]);}
+
+/* ================= synthetic sample (fallback) ================= */
+function makeSource(){
+  const S=[];
+  for(let t=0;t<RES_N;t++){
+    const f=[];const ph=2*Math.PI*t/20;
+    for(let j=0;j<22;j++){
+      let x=BX[j],y=BY[j],z=0;
+      y+=0.02*Math.sin(2*Math.PI*t/12);
+      if([4,5,7,8].includes(j)) z+=(j%2?1:-1)*0.14*Math.sin(ph);
+      if([16,18,20].includes(j)){z+=-0.10*Math.sin(ph);y+=0.06*Math.sin(ph);}
+      if([17,19,21].includes(j)){z+=0.10*Math.sin(ph);y+=-0.06*Math.sin(ph);}
+      f.push([x,y,z]);
+    }
+    S.push(f);
+  }
+  return S;
+}
+
+/* ================= clip conditioning (captured -> SOURCE) ================= */
+// smooth per-joint jitter (moving average) then resample time to RES_N frames.
+function smooth(frames,win){
+  const T=frames.length,out=[];const h=Math.floor(win/2);
+  for(let t=0;t<T;t++){const f=[];
+    for(let j=0;j<22;j++){let x=0,y=0,z=0,n=0;
+      for(let k=-h;k<=h;k++){const u=t+k;if(u<0||u>=T)continue;x+=frames[u][j][0];y+=frames[u][j][1];z+=frames[u][j][2];n++;}
+      f.push([x/n,y/n,z/n]);}
+    out.push(f);}
+  return out;
+}
+function resample(frames,N){
+  const T=frames.length;if(T===N)return frames.map(f=>f.map(p=>p.slice()));
+  const out=[];
+  for(let i=0;i<N;i++){
+    const u=(N===1)?0:i*(T-1)/(N-1);const a=Math.floor(u),b=Math.min(T-1,a+1),w=u-a;
+    const f=[];for(let j=0;j<22;j++){const pa=frames[a][j],pb=frames[b][j];
+      f.push([pa[0]+(pb[0]-pa[0])*w,pa[1]+(pb[1]-pa[1])*w,pa[2]+(pb[2]-pa[2])*w]);}
+    out.push(f);}
+  return out;
+}
+function conditionClip(frames){
+  // recenter each frame on pelvis (already hip-centered from toYupHip, but be safe), smooth, resample.
+  const centered=frames.map(f=>{const p=f[0];return f.map(q=>[q[0]-p[0],q[1]-p[1],q[2]-p[2]]);});
+  return resample(smooth(centered,5),RES_N);
+}
+
+let SOURCE=makeSource(), T=SOURCE.length;
+
+/* ================= reconstruction (9 zone-blend feature steps) ================= */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function apply(Jp,od,fv,t,pd,zo,active){
+  const on=i=>active.has(i);const k=Jp.length;
+  const t_vm=fv[0]/FPS,t_vs=fv[1]/FPS,t_ac=fv[2]/(FPS*FPS),t_rom=fv[3],
+        t_fq=fv[4],t_fm=fv[5],t_pd=fv[6],t_zs=fv[7]/FPS,t_or=fv[8];
+  const sp=od.map(d=>Math.hypot(d[0],d[1],d[2]));const msp=sp.reduce((a,b)=>a+b,0)/k;
+  let disp;
+  if(on(0)&&msp>1e-6){const s=t_vm/msp;disp=od.map(d=>[d[0]*s,d[1]*s,d[2]*s]);}else disp=od.map(d=>[d[0],d[1],d[2]]);
+  if(on(1)&&t_vs>1e-8&&msp>1e-6){
+    const js=disp.map(d=>Math.hypot(d[0],d[1],d[2]));const cm=js.reduce((a,b)=>a+b,0)/k;
+    const cs=Math.sqrt(js.reduce((a,b)=>a+(b-cm)*(b-cm),0)/k);
+    if(cs>1e-8&&cm>1e-8){const r=clamp(t_vs/cs,0.1,10);
+      disp=disp.map((d,i)=>{let s=clamp(1+(js[i]-cm)/cm*(r-1),0.1,10);return [d[0]*s,d[1]*s,d[2]*s];});}
+  }
+  if(on(2)&&t_ac>1e-8){
+    const pn=Math.hypot(...pd.flat());
+    if(pn>1e-6) disp=disp.map((d,i)=>{const dl=[d[0]-pd[i][0],d[1]-pd[i][1],d[2]-pd[i][2]];const dm=Math.hypot(...dl);
+      if(dm>t_ac){const s=t_ac/(dm+1e-8);return [pd[i][0]+dl[0]*s,pd[i][1]+dl[1]*s,pd[i][2]+dl[2]*s];}return d;});
+  }
+  if(on(4)&&on(5)&&t_fq>1e-4&&t_fm>1e-4){
+    const amp=t_fm*t_vm,ov=amp*Math.sin(2*Math.PI*t_fq*t/FPS);
+    const cd=[0,0,0];disp.forEach(d=>{cd[0]+=d[0];cd[1]+=d[1];cd[2]+=d[2];});cd[0]/=k;cd[1]/=k;cd[2]/=k;
+    const cn=Math.hypot(...cd);if(cn>1e-8)disp=disp.map(d=>[d[0]+ov*cd[0]/cn,d[1]+ov*cd[1]/cn,d[2]+ov*cd[2]/cn]);
+  }
+  let np=Jp.map((p,i)=>[p[0]+disp[i][0],p[1]+disp[i][1],p[2]+disp[i][2]]);
+  if(on(3)&&t_rom>1e-6){
+    const cn=[0,0,0],co=[0,0,0];np.forEach(p=>{cn[0]+=p[0];cn[1]+=p[1];cn[2]+=p[2];});zo.forEach(p=>{co[0]+=p[0];co[1]+=p[1];co[2]+=p[2];});
+    for(let a=0;a<3;a++){cn[a]/=k;co[a]/=k;}
+    const dr=Math.hypot(cn[0]-co[0],cn[1]-co[1],cn[2]-co[2]);
+    if(dr>t_rom){const f=(1-t_rom/dr);const pull=[(cn[0]-co[0])*f,(cn[1]-co[1])*f,(cn[2]-co[2])*f];
+      np=np.map(p=>[p[0]-pull[0],p[1]-pull[1],p[2]-pull[2]]);}
+  }
+  if(on(6)&&t_pd>1e-6&&k>=2){
+    const c=[0,0,0];np.forEach(p=>{c[0]+=p[0];c[1]+=p[1];c[2]+=p[2];});c[0]/=k;c[1]/=k;c[2]/=k;
+    let sum=0;for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){sum+=Math.hypot(np[i][0]-np[j][0],np[i][1]-np[j][1],np[i][2]-np[j][2]);}
+    const cur=sum/(k*(k-1)+1e-8);
+    if(cur>1e-8){const s=clamp(t_pd/cur,0.5,2);np=np.map(p=>[c[0]+(p[0]-c[0])*s,c[1]+(p[1]-c[1])*s,c[2]+(p[2]-c[2])*s]);}
+  }
+  if(on(7)&&t_zs>1e-8){
+    const cd=[0,0,0];od.forEach(d=>{cd[0]+=d[0];cd[1]+=d[1];cd[2]+=d[2];});cd[0]/=k;cd[1]/=k;cd[2]/=k;
+    const cur=Math.hypot(...cd);if(cur>1e-6){const s=clamp(t_zs/cur,0.1,5);np=np.map((p,i)=>[Jp[i][0]+(p[0]-Jp[i][0])*s,Jp[i][1]+(p[1]-Jp[i][1])*s,Jp[i][2]+(p[2]-Jp[i][2])*s]);}
+  }
+  if(on(8)&&t_or>1e-6&&k>=2){
+    const cj=[0,0,0];Jp.forEach(p=>{cj[0]+=p[0];cj[2]+=p[2];});cj[0]/=k;cj[2]/=k;
+    let num=0;for(let i=0;i<k;i++){const rx=Jp[i][0]-cj[0],rz=Jp[i][2]-cj[2];num+=(rx*od[i][2]-rz*od[i][0])/(rx*rx+rz*rz+1e-8);}
+    const sign=num>=0?1:-1,dth=sign*t_or/FPS,ca=Math.cos(dth),sa=Math.sin(dth);
+    const c=[0,0,0];np.forEach(p=>{c[0]+=p[0];c[2]+=p[2];});c[0]/=k;c[2]/=k;
+    np=np.map(p=>{const rx=p[0]-c[0],rz=p[2]-c[2];return [c[0]+rx*ca+rz*sa,p[1],c[2]-rx*sa+rz*ca];});
+  }
+  return [np,np.map((p,i)=>[p[0]-Jp[i][0],p[1]-Jp[i][1],p[2]-Jp[i][2]])];
+}
+function reconstruct(fv,active){
+  const out=SOURCE.map(f=>f.map(p=>p.slice()));
+  const od=[];for(let t=1;t<T;t++)od.push(SOURCE[t].map((p,j)=>[p[0]-SOURCE[t-1][j][0],p[1]-SOURCE[t-1][j][1],p[2]-SOURCE[t-1][j][2]]));
+  const prev={},orig={};for(const z in ZONES){prev[z]=ZONES[z].map(()=>[0,0,0]);orig[z]=ZONES[z].map(i=>out[0][i].slice());}
+  for(let t=1;t<T;t++){
+    for(const z in ZONES){const idx=ZONES[z];
+      const Jp=idx.map(i=>out[t-1][i]),odt=idx.map((i,q)=>od[t-1][i]);
+      let[np,nd]=apply(Jp,odt,fv,t,prev[z],orig[z],active);
+      if(!np.every(p=>p.every(Number.isFinite))){np=Jp.map(p=>p.slice());nd=idx.map(()=>[0,0,0]);}
+      idx.forEach((i,q)=>out[t][i]=np[q]);prev[z]=nd;
+    }
+  }
+  return out;
+}
+function measure(out){
+  let sp=0,cnt=0;
+  for(let t=1;t<T;t++)for(let j=0;j<22;j++){sp+=Math.hypot(out[t][j][0]-out[t-1][j][0],out[t][j][1]-out[t-1][j][1],out[t][j][2]-out[t-1][j][2])*FPS;cnt++;}
+  const arm=ZONES.arms;let tot=0,n=0;
+  for(let t=1;t<T;t++){const c=[0,0];arm.forEach(i=>{c[0]+=out[t-1][i][0];c[1]+=out[t-1][i][2];});c[0]/=arm.length;c[1]/=arm.length;
+    let w=0;arm.forEach(i=>{const rx=out[t-1][i][0]-c[0],rz=out[t-1][i][2]-c[1];const vx=(out[t][i][0]-out[t-1][i][0])*FPS,vz=(out[t][i][2]-out[t-1][i][2])*FPS;w+=(rx*vz-rz*vx)/(rx*rx+rz*rz+1e-8);});
+    tot+=Math.abs(w/arm.length);n++;}
+  return {speed:sp/cnt,turn:tot/n};
+}
+
+/* ================= feature rail ================= */
+const FEATURES=[
+  {i:0,name:"Velocity mean",axis:"Effort",unit:"m/s",min:0,max:5,step:0.05,def:1.6,hint:"overall joint speed"},
+  {i:1,name:"Velocity spread",axis:"Effort",unit:"m/s",min:0,max:3,step:0.05,def:1.4,hint:"variation across joints"},
+  {i:2,name:"Acceleration",axis:"Effort",unit:"m/s2",min:0.05,max:20,step:0.05,def:0.6,hint:"low = smooth, high = snappy"},
+  {i:7,name:"Zone speed",axis:"Effort",unit:"m/s",min:0,max:4,step:0.05,def:1.4,hint:"zone travels as one unit"},
+  {i:3,name:"Range of motion",axis:"Shape",unit:"m",min:0.05,max:2,step:0.05,def:0.9,hint:"how far the zone drifts"},
+  {i:6,name:"Spread",axis:"Shape",unit:"m",min:0.02,max:1,step:0.02,def:0.5,hint:"inter-joint expansion"},
+  {i:4,name:"Frequency",axis:"Rhythm",unit:"Hz",min:0,max:4,step:0.1,def:2.2,hint:"oscillation rate"},
+  {i:5,name:"Amplitude",axis:"Rhythm",unit:"",min:0,max:1,step:0.05,def:0.7,hint:"oscillation strength (pairs with frequency)"},
+  {i:8,name:"Turn rate",axis:"Space",unit:"rad/s",min:0,max:5,step:0.1,def:2.6,hint:"yaw about vertical",space:true},
+];
+const AXES=["Effort","Shape","Rhythm","Space"];
+const fv=new Array(9).fill(0);FEATURES.forEach(f=>fv[f.i]=f.def);
+const active=new Set();
+const rail=document.getElementById("rail");
+AXES.forEach(ax=>{
+  const g=document.createElement("div");g.className="grp"+(ax==="Space"?" space":"");
+  g.innerHTML=`<div class="grp-h"><span class="dot"></span><span class="ax">${ax}</span>${ax==="Space"?'<span class="new">NEW</span>':''}</div>`;
+  FEATURES.filter(f=>f.axis===ax).forEach(f=>{
+    const el=document.createElement("div");el.className="feat off"+(f.space?" space":"");el.dataset.i=f.i;
+    el.innerHTML=`<div class="feat-top"><button class="tg" aria-label="toggle"></button>
+      <div><div class="feat-name">${f.name}</div><div class="feat-hint">${f.hint}</div></div>
+      <div class="val"><span class="num">${f.def.toFixed(2)}</span> ${f.unit}</div></div>
+      <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.def}" disabled>`;
+    const tg=el.querySelector(".tg"),rng=el.querySelector("input"),num=el.querySelector(".num");
+    tg.onclick=()=>{const idx=f.i;const willOn=!active.has(idx);const pair=(idx===4||idx===5)?[4,5]:[idx];
+      pair.forEach(p=>{if(willOn)active.add(p);else active.delete(p);
+        const fe=rail.querySelector(`.feat[data-i="${p}"]`);fe.classList.toggle("on",willOn);fe.classList.toggle("off",!willOn);
+        fe.querySelector("input").disabled=!willOn;});
+      rebuild();};
+    rng.oninput=()=>{fv[f.i]=parseFloat(rng.value);num.textContent=fv[f.i].toFixed(2);if(active.has(f.i))rebuild();};
+    g.appendChild(el);
+  });
+  rail.appendChild(g);
+});
+
+/* ================= viewport render ================= */
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+let CLIP=reconstruct(fv,active),FIT=fitOf(CLIP),frame=0,playing=true;
+function fitOf(clip){let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+  for(const f of clip)for(const p of f){mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);}
+  const sx=cv.width/((mxx-mnx)||1),sy=cv.height/((mxy-mny)||1),s=0.72*Math.min(sx,sy);
+  return {s,cx:cv.width/2-(mnx+mxx)/2*s,cy:cv.height/2+(mny+mxy)/2*s};}
+function draw(){
+  ctx.fillStyle="#0b0b12";ctx.fillRect(0,0,cv.width,cv.height);
+  const spaceOn=active.has(8);const col=spaceOn?getVar('--space'):getVar('--cyan');
+  const f=CLIP[frame%T];const P=f.map(p=>[FIT.cx+p[0]*FIT.s,FIT.cy-p[1]*FIT.s]);
+  ctx.lineCap="round";ctx.lineWidth=3.4;ctx.strokeStyle=col;
+  for(const [a,b] of BONES){ctx.beginPath();ctx.moveTo(P[a][0],P[a][1]);ctx.lineTo(P[b][0],P[b][1]);ctx.stroke();}
+  ctx.fillStyle=col;for(let j=0;j<22;j++){if(j===15)continue;ctx.beginPath();ctx.arc(P[j][0],P[j][1],3.2,0,7);ctx.fill();}
+  const h=P[15],nk=P[12];const hr=Math.max(9,Math.hypot(h[0]-nk[0],h[1]-nk[1])*0.9);
+  ctx.beginPath();ctx.arc(h[0],h[1]-hr*0.2,hr,0,7);ctx.fillStyle="rgba(8,8,15,0.55)";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=col;ctx.stroke();
+}
+function getVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#5cd6ff";}
+let last=0;
+function loop(ts){if(playing&&ts-last>1000/24){last=ts;frame=(frame+1)%T;draw();}requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+function rebuild(){
+  CLIP=reconstruct(fv,active);FIT=fitOf(CLIP);const m=measure(CLIP);
+  document.getElementById("m-speed").textContent=m.speed.toFixed(2);
+  document.getElementById("m-turn").textContent=m.turn.toFixed(2);
+  document.getElementById("m-active").textContent=`${active.size} / 9`;
+  document.getElementById("status").textContent=active.size?`${active.size} feature${active.size>1?'s':''} active`:"original motion";
+}
+document.getElementById("play").onclick=e=>{playing=!playing;e.target.textContent=playing?"Pause":"Play";};
+document.getElementById("reset").onclick=()=>{
+  active.clear();
+  rail.querySelectorAll(".feat").forEach(fe=>{fe.classList.remove("on");fe.classList.add("off");fe.querySelector("input").disabled=true;
+    const i=+fe.dataset.i;const def=FEATURES.find(x=>x.i===i).def;fe.querySelector("input").value=def;fe.querySelector(".num").textContent=def.toFixed(2);fv[i]=def;});
+  rebuild();
+};
+
+/* set a new base motion, reset controls, show the station */
+function loadMotion(frames){
+  SOURCE=conditionClip(frames);T=SOURCE.length;
+  active.clear();
+  rail.querySelectorAll(".feat").forEach(fe=>{fe.classList.remove("on");fe.classList.add("off");fe.querySelector("input").disabled=true;
+    const i=+fe.dataset.i;const def=FEATURES.find(x=>x.i===i).def;fe.querySelector("input").value=def;fe.querySelector(".num").textContent=def.toFixed(2);fv[i]=def;});
+  frame=0;rebuild();
+  document.getElementById("capture").classList.add("hide");
+  document.getElementById("station").classList.remove("hide");
+  document.getElementById("hsub").textContent="Toggle each kinematic feature and feel what it adds. All off is your original motion.";
+}
+
+/* ================= capture screen ================= */
+const cam=document.getElementById("cam"), upvideo=document.getElementById("upvideo");
+const capcv=document.getElementById("capcv"), cctx=capcv.getContext("2d");
+const caphint=document.getElementById("caphint"), countdown=document.getElementById("countdown");
+const recBtn=document.getElementById("recBtn"), videoFile=document.getElementById("videoFile"), sampleBtn=document.getElementById("sampleBtn");
+const banner=document.getElementById("banner");
+let landmarker=null, camReady=false, recording=false, recFrames=[], recStart=0, recStopAt=0, durS=6, lastT=-1, camStream=null;
+
+function showBanner(msg,kind){banner.textContent=msg;banner.className="banner on"+(kind==="err"?" err":"");clearTimeout(showBanner._t);showBanner._t=setTimeout(()=>banner.classList.remove("on"),4200);}
+document.getElementById("durseg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  durS=parseFloat(b.dataset.s);[...e.currentTarget.children].forEach(c=>c.classList.toggle("sel",c===b));});
+
+function fitCanvas(w,h){capcv.width=w;capcv.height=h;}
+function drawCapFigure(j22){
+  const w=capcv.width,h=capcv.height;
+  // mirror x for the live webcam so it feels like a mirror; normalized coords -> pixels
+  const P=j22.map(p=>[(1-p[0])*w, p[1]*h]);
+  cctx.clearRect(0,0,w,h);
+  cctx.lineCap="round";cctx.lineWidth=Math.max(2,w*0.006);cctx.strokeStyle="rgba(236,238,245,.92)";
+  for(const [a,b] of BONES){cctx.beginPath();cctx.moveTo(P[a][0],P[a][1]);cctx.lineTo(P[b][0],P[b][1]);cctx.stroke();}
+  cctx.fillStyle="rgba(236,238,245,.92)";for(let j=0;j<22;j++){if(j===15)continue;cctx.beginPath();cctx.arc(P[j][0],P[j][1],Math.max(2,w*0.006),0,7);cctx.fill();}
+  const hd=P[15],nk=P[12];const hr=Math.max(8,Math.hypot(hd[0]-nk[0],hd[1]-nk[1])*0.9);
+  cctx.beginPath();cctx.arc(hd[0],hd[1]-hr*0.2,hr,0,7);cctx.strokeStyle="rgba(236,238,245,.92)";cctx.lineWidth=Math.max(2,w*0.005);cctx.stroke();
+}
+
+async function initCamera(){
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false});
+    cam.srcObject=camStream;await new Promise(r=>cam.onloadedmetadata=r);
+    fitCanvas(cam.videoWidth||640,cam.videoHeight||480);camReady=true;
+  }catch(e){caphint.textContent="Camera unavailable. Upload a video or use the sample.";}
+  try{
+    const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    landmarker=await PoseLandmarker.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",delegate:"GPU"},
+      runningMode:"VIDEO",numPoses:1});
+  }catch(e){caphint.textContent="Pose model failed to load. Check your connection and reload.";return;}
+  if(camReady){recBtn.disabled=false;caphint.textContent="Stand back so your whole body is in frame, then press Record.";}
+  requestAnimationFrame(camLoop);
+}
+function camLoop(ts){
+  if(camReady && landmarker && cam.readyState>=2 && cam.currentTime!==lastT){
+    lastT=cam.currentTime;
+    const res=landmarker.detectForVideo(cam,performance.now());
+    if(res.landmarks&&res.landmarks[0]) drawCapFigure(mp33to22(res.landmarks[0]));
+    if(recording&&res.worldLandmarks&&res.worldLandmarks[0]){
+      recFrames.push(toYupHip(mp33to22(res.worldLandmarks[0])));
+      const left=Math.max(0,(recStopAt-performance.now())/1000);
+      countdown.textContent=Math.ceil(left);
+      if(performance.now()>=recStopAt) finishRecording();
+    }
+  }
+  requestAnimationFrame(camLoop);
+}
+recBtn.onclick=()=>{
+  if(!camReady||!landmarker){showBanner("Camera or model not ready yet.","err");return;}
+  recFrames=[];recording=true;recStart=performance.now();recStopAt=recStart+durS*1000;
+  recBtn.disabled=true;countdown.classList.add("on");countdown.textContent=String(durS);
+  caphint.innerHTML='<span class="dotrec"></span>Recording&hellip; move however you like.';
+};
+function finishRecording(){
+  recording=false;countdown.classList.remove("on");recBtn.disabled=false;
+  if(recFrames.length<8){showBanner("No body detected. Step into frame and try again.","err");caphint.textContent="Stand back so your whole body is in frame, then press Record.";return;}
+  stopCamera();loadMotion(recFrames);
+}
+function stopCamera(){ if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;} camReady=false; }
+
+/* upload: seek-based extraction, works for any codec the browser can decode (H.264 MP4 included) */
+function once(el,ev,ms){return new Promise((res,rej)=>{let done=false;
+  const ok=()=>{if(done)return;done=true;cl();res();};
+  const t=ms?setTimeout(()=>{if(done)return;done=true;cl();rej(new Error("timeout"));},ms):null;
+  function cl(){el.removeEventListener(ev,ok);if(t)clearTimeout(t);}
+  el.addEventListener(ev,ok);});}
+videoFile.onchange=e=>{const f=e.target.files[0];if(f)processUpload(f);};
+async function processUpload(f){
+  if(!landmarker){showBanner("Pose model not ready yet. Wait a moment.","err");return;}
+  const url=URL.createObjectURL(f);
+  cam.style.display="none";upvideo.style.display="block";upvideo.loop=false;upvideo.muted=true;upvideo.pause();
+  recBtn.disabled=true;caphint.innerHTML='<span class="dotrec"></span>Loading video&hellip;';
+  let hadError=false;upvideo.onerror=()=>{hadError=true;};upvideo.src=url;
+  const codecMsg="Could not read that video. Please upload an H.264 MP4.";
+  try{await once(upvideo,"loadedmetadata",15000);}catch(err){return abortUpload(codecMsg,url);}
+  if(hadError||!isFinite(upvideo.duration)||upvideo.duration<=0) return abortUpload(codecMsg,url);
+  fitCanvas(upvideo.videoWidth||640,upvideo.videoHeight||480);
+  const dur=Math.min(upvideo.duration,60),fps=30,step=1/fps;
+  const nWant=Math.min(1800,Math.max(2,Math.round(dur*fps)));
+  const frames=[];let ts=performance.now();
+  for(let i=0;i<nWant;i++){
+    const t=Math.min(dur-1e-3,(i+0.5)*step);
+    try{upvideo.currentTime=t;await once(upvideo,"seeked",8000);}catch(err){break;}
+    let res;try{res=landmarker.detectForVideo(upvideo,ts+=1000/fps);}catch(err){break;}
+    if(res.landmarks&&res.landmarks[0]) drawUploadFigure(mp33to22(res.landmarks[0]));
+    if(res.worldLandmarks&&res.worldLandmarks[0]) frames.push(toYupHip(mp33to22(res.worldLandmarks[0])));
+    caphint.innerHTML=`<span class="dotrec"></span>Reading video&hellip; ${(100*(i+1)/nWant)|0}%`;
+  }
+  URL.revokeObjectURL(url);
+  if(frames.length<8) return abortUpload("No body detected in that video. Try a clearer full-body clip.",null);
+  stopCamera();loadMotion(frames);
+}
+function drawUploadFigure(j22){
+  const w=capcv.width,h=capcv.height;const P=j22.map(p=>[p[0]*w,p[1]*h]);
+  cctx.clearRect(0,0,w,h);cctx.lineCap="round";cctx.lineWidth=Math.max(2,w*0.006);cctx.strokeStyle="rgba(236,238,245,.92)";
+  for(const [a,b] of BONES){cctx.beginPath();cctx.moveTo(P[a][0],P[a][1]);cctx.lineTo(P[b][0],P[b][1]);cctx.stroke();}
+  cctx.fillStyle="rgba(236,238,245,.92)";for(let j=0;j<22;j++){if(j===15)continue;cctx.beginPath();cctx.arc(P[j][0],P[j][1],Math.max(2,w*0.006),0,7);cctx.fill();}
+}
+function abortUpload(msg,url){
+  if(url)URL.revokeObjectURL(url);upvideo.onerror=null;try{upvideo.pause();}catch(e){}
+  upvideo.style.display="none";cam.style.display="block";recBtn.disabled=!camReady;videoFile.value="";
+  showBanner(msg,"err");caphint.textContent=camReady?"Stand back so your whole body is in frame, then press Record.":"Upload a video or use the sample.";
+}
+sampleBtn.onclick=()=>{ stopCamera(); loadMotion(makeSource()); };
+
+/* return to capture from the station */
+document.getElementById("recapture").onclick=()=>{
+  document.getElementById("station").classList.add("hide");
+  document.getElementById("capture").classList.remove("hide");
+  document.getElementById("hsub").textContent="Record a short clip or upload a video. Your motion becomes the base you can reshape.";
+  cam.style.display="block";upvideo.style.display="none";lastT=-1;
+  initCamera();
+};
+
+if(matchMedia("(prefers-reduced-motion: reduce)").matches){playing=false;document.getElementById("play").textContent="Play";draw();}
+initCamera();
+</script>
