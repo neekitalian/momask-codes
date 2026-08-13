@@ -166,7 +166,7 @@ button.act.primary{background:var(--cyan);color:#04222c;border-color:var(--cyan)
 </div>
 
 <script type="module">
-import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import { FilesetResolver, PoseLandmarker } from "./vendor/mediapipe/vision_bundle.mjs";
 
 /* ================= skeleton ================= */
 const FPS=20, RES_N=140;                 // reconstruction runs at a fixed length for stable feel
@@ -441,9 +441,9 @@ async function initCamera(){
     fitCanvas(cam.videoWidth||640,cam.videoHeight||480);camReady=true;
   }catch(e){caphint.textContent="Camera unavailable. Upload a video or use the sample.";}
   try{
-    const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    const vision=await FilesetResolver.forVisionTasks("./vendor/mediapipe/wasm");
     landmarker=await PoseLandmarker.createFromOptions(vision,{
-      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",delegate:"GPU"},
+      baseOptions:{modelAssetPath:"./vendor/mediapipe/pose_landmarker_lite.task",delegate:"GPU"},
       runningMode:"VIDEO",numPoses:1});
   }catch(e){caphint.textContent="Pose model failed to load. Check your connection and reload.";return;}
   if(camReady){recBtn.disabled=false;caphint.textContent="Stand back so your whole body is in frame, then press Record.";}
