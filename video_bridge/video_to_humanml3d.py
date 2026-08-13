@@ -513,10 +513,14 @@ def resolve_output_path(video_path: Path, output_path: Path | None) -> Path:
     return Path(__file__).resolve().parent / f"{video_path.stem}.npy"
 
 
-def save_and_validate(features: np.ndarray, output_path: Path) -> Path:
+def save_and_validate(features: np.ndarray, output_path: Path,
+                      joints: np.ndarray | None = None) -> Path:
     output_path_npz = output_path.with_suffix(".npz")
     output_path_npz.parent.mkdir(parents=True, exist_ok=True)
-    np.savez(output_path_npz, motion=features.astype(np.float32))
+    # Also store the raw (T, 22, 3) joints so pure-kinematics consumers (Stage 2.2
+    # z estimation, the analyzer) can read them without decoding the 263D vector.
+    extra = {} if joints is None else {"joints": joints.astype(np.float32)}
+    np.savez(output_path_npz, motion=features.astype(np.float32), **extra)
     with np.load(output_path_npz) as saved_data:
         if "motion" not in saved_data:
             raise RuntimeError(f"Saved file is missing 'motion': {output_path_npz}")
@@ -609,7 +613,7 @@ def main() -> None:
     smpl_landmarks = mediapipe33_to_smpl22(mp_landmarks)
     joints, root_traj = normalize_to_humanml3d(smpl_landmarks)
     features = build_humanml3d_features(joints, root_traj)
-    saved_output_path = save_and_validate(features, output_path)
+    saved_output_path = save_and_validate(features, output_path, joints=joints)
 
     if args.visualize:
         save_overlay_video(
